@@ -3,8 +3,8 @@ Based on https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_
 """
 from dataclasses import dataclass
 
-from src.torch_waymo.protocol.keypoint_proto import LaserKeypoints, CameraKeypoints
-from src.torch_waymo.protocol.utils import ReversibleIntEnum
+from .keypoint_proto import LaserKeypoints, CameraKeypoints
+from .utils import ReversibleIntEnum
 
 
 class BoxType(ReversibleIntEnum):

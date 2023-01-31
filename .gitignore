@@ -1,3 +1,6 @@
 /.idea/
 /venv/
 /venv_tf/
+*.egg-info
+/build/
+/dist/

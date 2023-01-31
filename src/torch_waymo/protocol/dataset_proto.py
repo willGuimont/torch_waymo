@@ -6,8 +6,8 @@ from dataclasses import dataclass, fields, is_dataclass
 
 import numpy as np
 
-from src.torch_waymo.protocol.label_proto import Type, Label, Polygon2dProto
-from src.torch_waymo.protocol.utils import ReversibleIntEnum
+from .label_proto import Type, Label, Polygon2dProto
+from .utils import ReversibleIntEnum
 
 T = typing.TypeVar('T')
 

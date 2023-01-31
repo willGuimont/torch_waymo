@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from src.torch_waymo.protocol.dataset_proto import Context, Transform
-from src.torch_waymo.protocol.label_proto import Label, Polygon2dProto
+from ..protocol.dataset_proto import Context, Transform
+from ..protocol.label_proto import Label, Polygon2dProto
 
 
 @dataclass

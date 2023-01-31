@@ -7,9 +7,9 @@ import tensorflow.compat.v1 as tf
 tf.enable_eager_execution()
 import tqdm
 
-from src.torch_waymo.dataset.simplified_frame import SimplifiedFrame
-from src.torch_waymo.protocol import dataset_proto
-from src.torch_waymo.protocol.dataset_proto import Frame
+from . import SimplifiedFrame
+from .protocol import dataset_proto
+from .protocol.dataset_proto import Frame
 
 from waymo_open_dataset import dataset_pb2 as open_dataset
 from waymo_open_dataset.utils import frame_utils
@@ -73,20 +73,21 @@ def _load_frame(data):
 
 SPLITS = ['training', 'validation', 'testing']
 
-if __name__ == '__main__':
+
+def main():
+    global parser, args, split
     parser = argparse.ArgumentParser(prog='Convert Waymo',
                                      description='Convert the Waymo Open Dataset to remove all dependencies to Tensorflow')
-
     parser.add_argument('-d', '--dataset', type=str, required=True, help='Path to the Waymo Open Dataset')
-
     parser.add_argument('-s', '--splits', type=str, choices=SPLITS,
                         nargs='+', default=SPLITS, help='Specify the splits you want to process')
-
     args = parser.parse_args()
-
     dataset_path = pathlib.Path(args.dataset)
     splits = args.splits
-
     for split in splits:
         print(f'Processing {split}...')
         generate_cache(dataset_path, split)
+
+
+if __name__ == '__main__':
+    main()

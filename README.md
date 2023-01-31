@@ -6,8 +6,6 @@ Load Waymo Open Dataset in PyTorch
 
 Requires:
 - Python < 3.10
-- nvidia-container-toolkit (to run inside of docker)
-- nvidia-container-runtime (also for docker)
 
 ### Download the dataset
 
@@ -29,20 +27,29 @@ gsutil -m cp -r \
 # Make a tf venv
 python -m venv venv_tf
 source venv_tf/bin/activate
-pip install -r requirements_tf.txt
+pip install torch_waymo[waymo]
 
 # Convert all the dataset
-python convert_waymo.py --dataset <path/to/waymo>
+torch-waymo-convert --dataset <path/to/waymo>
 # Or only convert the training split
-python convert_waymo.py --dataset <path/to/waymo> --split training
-# Or only convert multiple splits
-python convert_waymo.py --dataset <path/to/waymo> --split training validation
+torch-waymo-convert --dataset <path/to/waymo> --split training
+# Or convert multiple splits
+torch-waymo-convert --dataset <path/to/waymo> --split training validation
 ```
 
 ### Load it in your project
 
+Now that the dataset is converted, you don't have to depend on `waymo-open-dataset-tf-2-6-0` in your project.
+You can simply install `torch_waymo` in your project.
+
+```shell
+pip install torch_waymo
+```
+
+Example usage:
+
 ```python
-from src.torch_waymo.dataset.waymo_dataset import WaymoDataset
+from torch_waymo import WaymoDataset
 
 train_dataset = WaymoDataset('~/Datasets/Waymo/converted', 'training')
 

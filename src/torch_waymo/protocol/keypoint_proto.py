@@ -3,7 +3,7 @@ Based on https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_
 """
 from dataclasses import dataclass
 
-from src.torch_waymo.protocol.utils import ReversibleIntEnum
+from .utils import ReversibleIntEnum
 
 
 @dataclass

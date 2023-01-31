@@ -1,4 +1,0 @@
-numpy
-waymo-open-dataset-tf-2-6-0
-torch
-tqdm

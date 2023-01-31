@@ -4,7 +4,7 @@ from typing import Optional, Callable
 
 from torch.utils.data import Dataset
 
-from src.torch_waymo.dataset.simplified_frame import SimplifiedFrame
+from .simplified_frame import SimplifiedFrame
 
 
 class WaymoDataset(Dataset):

@@ -3,19 +3,27 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "torch_waymo"
-version = "0.1.0"
+version = "0.0.1"
 authors = [
-  { name="William Guimont-Martin", email="william.guimont-martin.1@ulaval.ca" },
+    { name = "William Guimont-Martin", email = "william.guimont-martin.1@ulaval.ca" },
 ]
 description = "Load Waymo Open Dataset in PyTorch"
 readme = "README.md"
 requires-python = ">=3.7,<3.10"
+dependencies = [
+    'tqdm',
+    'torch',
+    'numpy',
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-
+[project.optional-dependencies]
+waymo = ["waymo-open-dataset-tf-2-6-0"]
 [project.urls]
 "Homepage" = "https://github.com/willGuimont/torch_waymo"
 "Bug Tracker" = "https://github.com/willGuimont/torch_waymo/issues"
+[project.scripts]
+torch-waymo-convert = "torch_waymo.convert_waymo:main"
