@@ -5,5 +5,5 @@ authors:
     given-names: "William"
     orcid: https://orcid.org/my-orcid?orcid=0000-0002-8850-8399
 title: "A PyTorch dataloader for Waymo Open Dataset"
-version: 0.1.0
-date-released: 2022-01-31
+version: 0.1.1
+date-released: 2023-01-31

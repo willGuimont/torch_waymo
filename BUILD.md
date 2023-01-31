@@ -16,4 +16,6 @@ python -m twine upload --repository testpypi dist/*
 python -m pip install --index-url https://test.pypi.org/simple/ --no-deps torch_waymo
 
 # Real PyPI
+# Use username __token__, and copy your PyPI token as the password
+python -m twine upload dist/*
 ```

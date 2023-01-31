@@ -2,6 +2,17 @@
 
 Load Waymo Open Dataset in PyTorch
 
+Cite this repository:
+```
+@software{Guimont-Martin_A_PyTorch_dataloader_2022,
+    author = {Guimont-Martin, William},
+    month = {1},
+    title = {{A PyTorch dataloader for Waymo Open Dataset}},
+    version = {0.1.1},
+    year = {2023}
+}
+```
+
 ## Usage
 
 Requires:
