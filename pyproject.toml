@@ -25,3 +25,5 @@ waymo = ["waymo-open-dataset-tf-2-6-0"]
 torch-waymo-convert = "torch_waymo.convert_waymo:main"
 [tool.black]
 line-length = 120
+[tool.isort]
+profile = "black"
