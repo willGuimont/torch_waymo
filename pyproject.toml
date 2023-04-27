@@ -10,7 +10,7 @@ authors = [
 description = "Load Waymo Open Dataset in PyTorch"
 readme = "README.md"
 requires-python = ">=3.7"
-dependencies = ['tqdm', 'torch', 'numpy']
+dependencies = ["tqdm", "torch", "numpy"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
