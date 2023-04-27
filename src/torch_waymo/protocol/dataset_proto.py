@@ -9,25 +9,31 @@ import numpy as np
 from .label_proto import Type, Label, Polygon2dProto
 from .utils import ReversibleIntEnum
 
-T = typing.TypeVar('T')
+T = typing.TypeVar("T")
 
 
 def fullname(o):
     klass = o.__class__
     module = klass.__module__
-    if module == 'builtins':
+    if module == "builtins":
         return klass.__qualname__  # avoid outputs like 'builtins.str'
-    return module + '.' + klass.__qualname__
+    return module + "." + klass.__qualname__
 
 
 def from_data(cls: typing.Type[T], data) -> T:
     from waymo_open_dataset import dataset_pb2
-    from google.protobuf.pyext._message import RepeatedCompositeContainer, RepeatedScalarContainer
+    from google.protobuf.pyext._message import (
+        RepeatedCompositeContainer,
+        RepeatedScalarContainer,
+    )
 
     if isinstance(data, dataset_pb2.Transform):
         return np.array(data.transform).reshape((4, 4))
-    if isinstance(data, list) or isinstance(data, RepeatedCompositeContainer) or isinstance(data,
-                                                                                            RepeatedScalarContainer):
+    if (
+        isinstance(data, list)
+        or isinstance(data, RepeatedCompositeContainer)
+        or isinstance(data, RepeatedScalarContainer)
+    ):
         return [from_data(cls[0], d) for d in data]
     if not is_dataclass(cls):
         return data
@@ -136,6 +142,7 @@ class RangeImage:
     """
     *_compressed are compressed using Zlib (val = ZlibDecompress(range_image_compressed))
     """
+
     range_image_compressed: np.ndarray
     camera_projection_compressed: np.ndarray
     range_image_pose_compressed: np.ndarray
