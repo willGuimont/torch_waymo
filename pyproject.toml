@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "torch_waymo"
-version = "0.1.3"
+version = "0.1.4"
 authors = [
     { name = "William Guimont-Martin", email = "william.guimont-martin.1@ulaval.ca" },
 ]

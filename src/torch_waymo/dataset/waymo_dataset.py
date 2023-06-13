@@ -22,7 +22,7 @@ class WaymoDataset(Dataset):
             raise RuntimeError(f"Could not find {self._seq_len_cache_path}")
 
     def __len__(self) -> int:
-        return self._seq_lens[-1]
+        return sum(self._seq_lens)
 
     def __getitem__(self, idx: int) -> SimplifiedFrame:
         path = self._split_path.joinpath(f"{idx}.pkl")
