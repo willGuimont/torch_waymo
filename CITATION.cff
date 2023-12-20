@@ -1,9 +1,26 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+title: torch_waymo: A PyTorch dataloader for Waymo Open Dataset
+message: 'If you use this software, please cite it as below.'
+type: software
 authors:
-  - family-names: "Guimont-Martin"
-    given-names: "William"
-    orcid: https://orcid.org/my-orcid?orcid=0000-0002-8850-8399
-title: "A PyTorch dataloader for Waymo Open Dataset"
+  - family-names: Guimont-Martin
+    given-names: William
+    orcid: 'https://orcid.org/0000-0002-8850-8399'
+    email: william.guimont-martin.1@ulaval.ca
+    affiliation: Université Laval
+repository-code: 'https://github.com/willGuimont/torch_waymo'
+url: 'https://github.com/willGuimont/torch_waymo'
+abstract: Load Waymo Open Dataset in PyTorch
+keywords:
+  - point cloud
+  - torch
+  - pytorch
+  - dataset
+  - waymo
+  - dataloader
+license: MIT
 version: 0.1.1
-date-released: 2023-01-31
+date-released: '2023-01-31'
