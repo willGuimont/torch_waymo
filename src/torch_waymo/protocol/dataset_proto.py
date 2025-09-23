@@ -13,6 +13,11 @@ T = typing.TypeVar("T")
 
 
 def fullname(o):
+    """
+    Get the full name of a class, including module, e.g. 'module.submodule.ClassName'
+    :param o: object or class
+    :return: full name
+    """
     klass = o.__class__
     module = klass.__module__
     if module == "builtins":
@@ -21,6 +26,13 @@ def fullname(o):
 
 
 def from_data(cls: typing.Type[T], data) -> T:
+    """
+    Convert a protobuf message to a dataclass instance.
+    Handles nested dataclasses and lists of dataclasses.
+    :param cls: the dataclass type to convert to
+    :param data: the protobuf message
+    :return: the dataclass instance
+    """
     from waymo_open_dataset import dataset_pb2
     from google.protobuf.pyext._message import (
         RepeatedCompositeContainer,
@@ -35,6 +47,7 @@ def from_data(cls: typing.Type[T], data) -> T:
         or isinstance(data, RepeatedScalarContainer)
     ):
         return [from_data(cls[0], d) for d in data]
+
     if not is_dataclass(cls):
         return data
 
@@ -55,6 +68,9 @@ Transform = np.ndarray
 
 
 class CameraName(ReversibleIntEnum):
+    """
+    Camera names as per the Waymo dataset specification.
+    """
     UNKNOWN = 0
     FRONT = 1
     FRONT_LEFT = 2
@@ -64,6 +80,9 @@ class CameraName(ReversibleIntEnum):
 
 
 class LaserName(ReversibleIntEnum):
+    """
+    Laser names as per the Waymo dataset specification.
+    """
     UNKNOWN = 0
     TOP = 1
     FRONT = 2
@@ -74,6 +93,9 @@ class LaserName(ReversibleIntEnum):
 
 @dataclass
 class Velocity:
+    """
+    Velocity of the sensor in the vehicle frame.
+    """
     # velocity in m/s
     v_x: float
     v_y: float
@@ -86,6 +108,9 @@ class Velocity:
 
 
 class RollingShutterReadOutDirection(ReversibleIntEnum):
+    """
+    Rolling shutter readout direction as per the Waymo dataset specification.
+    """
     UNKNOWN = 0
     TOP_TO_BOTTOM = 1
     LEFT_TO_RIGHT = 2
@@ -96,6 +121,9 @@ class RollingShutterReadOutDirection(ReversibleIntEnum):
 
 @dataclass
 class CameraCalibration:
+    """
+    Camera calibration parameters.
+    """
     name: CameraName
     # 1d Array of [f_u, f_v, c_u, c_v, k{1, 2}, p{1, 2}, k{3}], follows the same definition as OpenCV
     intrinsic: [float]
@@ -107,6 +135,9 @@ class CameraCalibration:
 
 @dataclass
 class LaserCalibration:
+    """
+    Laser calibration parameters.
+    """
     name: LaserName
     beam_inclinations: [float]
     beam_inclination_min: float
@@ -116,12 +147,18 @@ class LaserCalibration:
 
 @dataclass
 class ObjectCount:
+    """
+    Object count for a specific type.
+    """
     type: Type
     count: int
 
 
 @dataclass
 class Stats:
+    """
+    Dataset statistics for the context.
+    """
     laser_object_counts: [ObjectCount]
     camera_object_counts: [ObjectCount]
     time_of_day: str
@@ -131,6 +168,9 @@ class Stats:
 
 @dataclass
 class Context:
+    """
+    Context information for the sequence.
+    """
     name: str
     camera_calibrations: [CameraCalibration]
     laser_calibrations: [LaserCalibration]
@@ -140,7 +180,9 @@ class Context:
 @dataclass
 class RangeImage:
     """
-    *_compressed are compressed using Zlib (val = ZlibDecompress(range_image_compressed))
+    Range image and associated data.
+    *_compressed fields are compressed using Zlib, decompress using:
+    val = ZlibDecompress(range_image_compressed)
     """
 
     range_image_compressed: np.ndarray
@@ -152,6 +194,9 @@ class RangeImage:
 
 @dataclass
 class InstanceIDToGlobalIDMapping:
+    """
+    Mapping from local instance ID to global instance ID.
+    """
     local_instance_id: int
     global_instance_id: int
     is_tracked: bool
@@ -159,6 +204,9 @@ class InstanceIDToGlobalIDMapping:
 
 @dataclass
 class CameraSegmentationLabel:
+    """
+    Camera segmentation label information.
+    """
     panoptic_label_divisor: int
     panoptic_label: np.ndarray
     instance_id_to_global_id_mapping: [InstanceIDToGlobalIDMapping]
@@ -167,8 +215,11 @@ class CameraSegmentationLabel:
 
 @dataclass
 class CameraImage:
+    """
+    Camera image and associated data.
+    """
     name: CameraName
-    image: np.ndarray
+    image: bytes
     pose: Transform
     velocity: Velocity
     pose_timestamp: float
@@ -180,12 +231,18 @@ class CameraImage:
 
 @dataclass
 class CameraLabels:
+    """
+    Labels associated with a camera.
+    """
     name: CameraName
     labels: [Label]
 
 
 @dataclass
 class Laser:
+    """
+    Laser data and associated range images.
+    """
     name: LaserName
     ri_return1: RangeImage
     ri_return2: RangeImage
@@ -193,6 +250,9 @@ class Laser:
 
 @dataclass
 class Frame:
+    """
+    A single frame of data in the Waymo dataset.
+    """
     context: Context
     timestamp_micros: int
     pose: Transform
@@ -202,3 +262,5 @@ class Frame:
     projected_lidar_labels: [CameraLabels]
     camera_labels: [CameraLabels]
     no_label_zones: [Polygon2dProto]
+    # Empty if not computed
+    points: np.ndarray = None

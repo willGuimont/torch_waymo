@@ -9,14 +9,22 @@ import tqdm
 from waymo_open_dataset import dataset_pb2 as open_dataset
 from waymo_open_dataset.utils import frame_utils
 
-from . import SimplifiedFrame
-from .protocol import dataset_proto
-from .protocol.dataset_proto import Frame
+from torch_waymo.dataset import SimplifiedFrame
+from torch_waymo.protocol import dataset_proto
+from torch_waymo.protocol.dataset_proto import Frame
 
 
-def generate_cache(root_path: pathlib.Path, split: str):
+def generate_cache(root_path: pathlib.Path, split: str, simplified: bool = False):
+    """
+    Convert the Waymo Open Dataset to a format without Tensorflow dependencies.
+    :param root_path: Path to the Waymo dataset root directory.
+    :param split: One of "training", "validation", "testing".
+    :param simplified: If True, store simplified frames (no images) into 'converted_simplified' instead of full frames.
+    :return: None
+    """
+    output_root_name = "converted_simplified" if simplified else "converted"
     split_path = root_path.joinpath(split)
-    split_cache_path = root_path.joinpath("converted").joinpath(split)
+    split_cache_path = root_path.joinpath(output_root_name).joinpath(split)
 
     split_path.mkdir(parents=True, exist_ok=True)
     split_cache_path.mkdir(parents=True, exist_ok=True)
@@ -34,9 +42,9 @@ def generate_cache(root_path: pathlib.Path, split: str):
             frame_path = split_cache_path.joinpath(f"{frame_count}.pkl")
             frame_count += 1
             if not frame_path.exists():
-                simple_frame = _load_frame(data)
+                obj = _load_frame(data, simplified=simplified)
                 with open(frame_path, "wb") as f:
-                    pickle.dump(simple_frame, f)
+                    pickle.dump(obj, f)
 
 
 def _cache_seq_lens(sequence_paths, split_cache_path):
@@ -56,26 +64,41 @@ def _get_size(s: pathlib.Path) -> int:
     return sum(1 for _ in tf.data.TFRecordDataset(s, compression_type=""))
 
 
-def _load_frame(data):
+def _load_frame(data, simplified: bool):
+    """
+    Load a single frame from TFRecord data.
+    :param data: TFRecord data
+    :param simplified: If True, return a SimplifiedFrame (no images), else return full Frame.
+    :return: Frame or SimplifiedFrame
+    """
     frame = open_dataset.Frame()
     frame.ParseFromString(bytearray(data.numpy()))
+    converted_frame = dataset_proto.from_data(Frame, frame)
+
+    # Generate point cloud
     (
         range_images,
         camera_projections,
         _,
         range_image_top_pose,
     ) = frame_utils.parse_range_image_and_camera_projection(frame)
-    points, cp_points = frame_utils.convert_range_image_to_point_cloud(
+    points, _ = frame_utils.convert_range_image_to_point_cloud(
         frame, range_images, camera_projections, range_image_top_pose
     )
-    clean_frame = dataset_proto.from_data(Frame, frame)
+    converted_frame.points = points
+
+    if not simplified:
+        # Return full frame (images, lasers, labels). Point cloud generation skipped for speed.
+        return converted_frame
+
+    # Simplified path: compute point cloud and build SimplifiedFrame (no images stored)
     simple_frame = SimplifiedFrame(
-        clean_frame.context,
-        clean_frame.timestamp_micros,
-        clean_frame.pose,
-        clean_frame.laser_labels,
-        clean_frame.no_label_zones,
-        points,
+        converted_frame.context,
+        converted_frame.timestamp_micros,
+        converted_frame.pose,
+        converted_frame.laser_labels,
+        converted_frame.no_label_zones,
+        converted_frame.points,
     )
     return simple_frame
 
@@ -104,12 +127,21 @@ def main():
         default=SPLITS,
         help="Specify the splits you want to process",
     )
+    parser.add_argument(
+        "--simplified",
+        action="store_true",
+        help="Store simplified frames (no images) into 'converted_simplified' instead of full frames.",
+    )
+
     args = parser.parse_args()
-    dataset_path = pathlib.Path(args.dataset)
+    dataset_path = pathlib.Path(args.dataset).expanduser()
     splits = args.splits
+    simplified = args.simplified
+
     for split in splits:
-        print(f"Processing {split}...")
-        generate_cache(dataset_path, split)
+        mode = "simplified" if simplified else "full"
+        print(f"Processing {split} in {mode} mode...")
+        generate_cache(dataset_path, split, simplified=simplified)
 
 
 if __name__ == "__main__":

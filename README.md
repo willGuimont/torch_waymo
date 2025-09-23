@@ -35,37 +35,63 @@ gsutil -m cp -r \
 ### Convert it
 
 ```shell
-# Make a tf venv
-python -m venv venv_tf
+# Make a tf venv with Python < 3.10
+python3.9 -m venv venv_tf
 source venv_tf/bin/activate
-pip install torch_waymo[waymo]
 
-# Convert all the dataset
+# We recommend using uv for faster installs
+pip install uv
+uv pip install "torch_waymo[waymo]"
+
+# Convert all splits (FULL frames with images & lasers) -> writes to <path>/converted
 torch-waymo-convert --dataset <path/to/waymo>
-# Or only convert the training split
-torch-waymo-convert --dataset <path/to/waymo> --split training
-# Or convert multiple splits
-torch-waymo-convert --dataset <path/to/waymo> --split training validation
+
+# Convert only training split (FULL frames)
+torch-waymo-convert --dataset <path/to/waymo> --splits training
+
+# Convert multiple splits (FULL frames)
+torch-waymo-convert --dataset <path/to/waymo> --splits training validation
+
+# (NEW) Convert to SIMPLIFIED frames (no camera images stored, point cloud + labels only)
+# Writes to <path>/converted_simplified
+torch-waymo-convert --dataset <path/to/waymo> --simplified
+
+# Simplified + specific splits
+torch-waymo-convert --dataset <path/to/waymo> --simplified --splits training validation
 ```
 
 ### Load it in your project
 
-Now that the dataset is converted, you don't have to depend on `waymo-open-dataset-tf-2-6-0` in your project.
-You can simply install `torch_waymo` in your project.
+Now that the dataset is converted, you don't have to depend on `waymo-open-dataset-tf-2-11-0` in your downstream project.
+You can simply install `torch_waymo` in your *runtime* environment.
 
 ```shell
 pip install torch_waymo
 ```
-
 Example usage:
-
+train_dataset = WaymoDataset('~/Datasets/Waymo/converted_simplified', 'training')
+Example usage (Full conversion):
 ```python
 from torch_waymo import WaymoDataset
 
-train_dataset = WaymoDataset('~/Datasets/Waymo/converted', 'training')
-
+# Simplified frames (no images, only point clouds + labels)
+train_dataset = WaymoDataset('~/Datasets/Waymo/converted_simplified', 'training')
 for i in range(10):
     # frame is of type SimplifiedFrame
     frame = train_dataset[i]
     print(frame.timestamp_micros)
+    print(frame.timestamp_micros, len(frame.lasers))
+
+# Full frames (with images)
+train_dataset = WaymoDataset('~/Datasets/Waymo/converted', 'training')
+for i in range(10):
+    # frame is of type Frame
+    frame = train_dataset[i]
+    print(frame.timestamp_micros)
+    print(frame.timestamp_micros, len(frame.images))
 ```
+
+Notes:
+- Paths with `~` are supported; they will expand to your home directory.
+- `len.pkl` inside each split directory stores cumulative frame counts for indexing.
+- If you re-run conversion, existing frames are skipped (idempotent per frame file).

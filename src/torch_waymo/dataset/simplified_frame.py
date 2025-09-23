@@ -12,5 +12,5 @@ class SimplifiedFrame:
     timestamp_micros: int
     pose: Transform
     laser_labels: [Label]
-    no_label_zones: Polygon2dProto
+    no_label_zones: [Polygon2dProto]
     points: np.ndarray
