@@ -1,12 +1,13 @@
 """
 Based on https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto#L145
 """
+
 import typing
 from dataclasses import dataclass, fields, is_dataclass
 
 import numpy as np
 
-from .label_proto import Type, Label, Polygon2dProto
+from .label_proto import Label, Polygon2dProto, Type
 from .utils import ReversibleIntEnum
 
 T = typing.TypeVar("T")
@@ -33,11 +34,11 @@ def from_data(cls: typing.Type[T], data) -> T:
     :param data: the protobuf message
     :return: the dataclass instance
     """
-    from waymo_open_dataset import dataset_pb2
     from google.protobuf.pyext._message import (
         RepeatedCompositeContainer,
         RepeatedScalarContainer,
     )
+    from waymo_open_dataset import dataset_pb2
 
     if isinstance(data, dataset_pb2.Transform):
         return np.array(data.transform).reshape((4, 4))
@@ -71,6 +72,7 @@ class CameraName(ReversibleIntEnum):
     """
     Camera names as per the Waymo dataset specification.
     """
+
     UNKNOWN = 0
     FRONT = 1
     FRONT_LEFT = 2
@@ -83,6 +85,7 @@ class LaserName(ReversibleIntEnum):
     """
     Laser names as per the Waymo dataset specification.
     """
+
     UNKNOWN = 0
     TOP = 1
     FRONT = 2
@@ -96,6 +99,7 @@ class Velocity:
     """
     Velocity of the sensor in the vehicle frame.
     """
+
     # velocity in m/s
     v_x: float
     v_y: float
@@ -111,6 +115,7 @@ class RollingShutterReadOutDirection(ReversibleIntEnum):
     """
     Rolling shutter readout direction as per the Waymo dataset specification.
     """
+
     UNKNOWN = 0
     TOP_TO_BOTTOM = 1
     LEFT_TO_RIGHT = 2
@@ -124,6 +129,7 @@ class CameraCalibration:
     """
     Camera calibration parameters.
     """
+
     name: CameraName
     # 1d Array of [f_u, f_v, c_u, c_v, k{1, 2}, p{1, 2}, k{3}], follows the same definition as OpenCV
     intrinsic: [float]
@@ -138,6 +144,7 @@ class LaserCalibration:
     """
     Laser calibration parameters.
     """
+
     name: LaserName
     beam_inclinations: [float]
     beam_inclination_min: float
@@ -150,6 +157,7 @@ class ObjectCount:
     """
     Object count for a specific type.
     """
+
     type: Type
     count: int
 
@@ -159,6 +167,7 @@ class Stats:
     """
     Dataset statistics for the context.
     """
+
     laser_object_counts: [ObjectCount]
     camera_object_counts: [ObjectCount]
     time_of_day: str
@@ -171,6 +180,7 @@ class Context:
     """
     Context information for the sequence.
     """
+
     name: str
     camera_calibrations: [CameraCalibration]
     laser_calibrations: [LaserCalibration]
@@ -197,6 +207,7 @@ class InstanceIDToGlobalIDMapping:
     """
     Mapping from local instance ID to global instance ID.
     """
+
     local_instance_id: int
     global_instance_id: int
     is_tracked: bool
@@ -207,6 +218,7 @@ class CameraSegmentationLabel:
     """
     Camera segmentation label information.
     """
+
     panoptic_label_divisor: int
     panoptic_label: np.ndarray
     instance_id_to_global_id_mapping: [InstanceIDToGlobalIDMapping]
@@ -218,6 +230,7 @@ class CameraImage:
     """
     Camera image and associated data.
     """
+
     name: CameraName
     image: bytes
     pose: Transform
@@ -234,6 +247,7 @@ class CameraLabels:
     """
     Labels associated with a camera.
     """
+
     name: CameraName
     labels: [Label]
 
@@ -243,6 +257,7 @@ class Laser:
     """
     Laser data and associated range images.
     """
+
     name: LaserName
     ri_return1: RangeImage
     ri_return2: RangeImage
@@ -253,6 +268,7 @@ class Frame:
     """
     A single frame of data in the Waymo dataset.
     """
+
     context: Context
     timestamp_micros: int
     pose: Transform

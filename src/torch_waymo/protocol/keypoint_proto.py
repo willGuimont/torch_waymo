@@ -1,6 +1,7 @@
 """
 Based on https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/protos/keypoint.proto
 """
+
 from dataclasses import dataclass
 
 from .utils import ReversibleIntEnum

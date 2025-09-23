@@ -9,8 +9,9 @@ try:
 except ImportError as e:
     raise ImportError("Pillow is required for this demo. Install with `pip install pillow`.") from e
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 from torch_waymo.protocol.dataset_proto import CameraName
 from torch_waymo.protocol.label_proto import Type as LabelType
 
@@ -23,10 +24,10 @@ def _decode_image(data: bytes) -> np.ndarray:
 def _describe_frame(frame, index: int) -> str:
     lines = []
     frame_type = frame.__class__.__name__
-    timestamp = getattr(frame, 'timestamp_micros', 'N/A')
+    timestamp = getattr(frame, "timestamp_micros", "N/A")
 
     # Cameras
-    if hasattr(frame, 'images'):
+    if hasattr(frame, "images"):
         cameras = frame.images
         cam_names = []
         for ci in cameras:
@@ -39,13 +40,13 @@ def _describe_frame(frame, index: int) -> str:
         cam_summary = "0 cameras (simplified frame)"
 
     # Lasers
-    if hasattr(frame, 'lasers'):
+    if hasattr(frame, "lasers"):
         laser_count = len(frame.lasers)
     else:
         laser_count = 0
 
     # Labels
-    labels = getattr(frame, 'laser_labels', []) or []
+    labels = getattr(frame, "laser_labels", []) or []
     total_labels = len(labels)
     label_counts = {lt: 0 for lt in LabelType}
     for lbl in labels:
@@ -64,7 +65,10 @@ def _describe_frame(frame, index: int) -> str:
     if pts_obj is None:
         point_summary = "points: N/A"
     else:
-        total_pts = getattr(pts_obj, 'shape', [0])[0] if hasattr(pts_obj, 'shape') else 0
+        if isinstance(pts_obj, (list, tuple)):
+            total_pts = sum(getattr(p, "shape", [0])[0] if hasattr(p, "shape") else 0 for p in pts_obj)
+        else:
+            total_pts = getattr(pts_obj, "shape", [0])[0] if hasattr(pts_obj, "shape") else 0
         point_summary = f"points: {total_pts}"
 
     lines.append(f"Frame {index} | {frame_type}")
@@ -81,7 +85,7 @@ def _show_frames(dataset_path: str, split: str, num_frames: int):
     for i in range(num_frames):
         frame = dataset[i]
         print(_describe_frame(frame, i))
-        if hasattr(frame, 'images'):
+        if hasattr(frame, "images"):
             cam_images = frame.images
             if len(cam_images) == 0:
                 print(f"Frame {i} has no images.")
@@ -118,12 +122,12 @@ def _show_frames(dataset_path: str, split: str, num_frames: int):
                         cam_name = str(cam_img.name)
                     ax.imshow(arr)
                     ax.set_title(cam_name)
-                    ax.axis('off')
+                    ax.axis("off")
 
                 for extra_idx in range(n, rows * cols):
                     r = extra_idx // cols
                     c = extra_idx % cols
-                    axes[r, c].axis('off')
+                    axes[r, c].axis("off")
 
                 fig.suptitle(f"Frame {i} - All camera images ({n})")
                 plt.tight_layout()
@@ -134,14 +138,15 @@ def _show_frames(dataset_path: str, split: str, num_frames: int):
 
 def main():
     parser = argparse.ArgumentParser(description="Show Waymo dataset camera images in a grid per frame.")
-    parser.add_argument('-d', '--dataset', required=True, help='Path to converted or converted_simplified dataset root')
-    parser.add_argument('-s', '--split', choices=['training', 'validation', 'testing'], default='training',
-                        help='Dataset split')
-    parser.add_argument('-n', '--num-frames', type=int, default=10, help='Number of frames to display')
+    parser.add_argument("-d", "--dataset", required=True, help="Path to converted or converted_simplified dataset root")
+    parser.add_argument(
+        "-s", "--split", choices=["training", "validation", "testing"], default="training", help="Dataset split"
+    )
+    parser.add_argument("-n", "--num-frames", type=int, default=10, help="Number of frames to display")
     args = parser.parse_args()
 
     _show_frames(args.dataset, args.split, args.num_frames)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

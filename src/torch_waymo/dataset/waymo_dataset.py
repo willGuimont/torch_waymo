@@ -1,11 +1,11 @@
 import pathlib
 import pickle
-from typing import Optional, Callable, Union
+from typing import Callable, Optional, Union
 
 from torch.utils.data import Dataset
 
-from .simplified_frame import SimplifiedFrame
 from ..protocol.dataset_proto import Frame
+from .simplified_frame import SimplifiedFrame
 
 
 class WaymoDataset(Dataset):

@@ -103,10 +103,9 @@ def _load_frame(data, simplified: bool):
     return simple_frame
 
 
-SPLITS = ["training", "validation", "testing"]
-
-
 def main():
+    SPLITS = ["training", "validation", "testing"]
+
     parser = argparse.ArgumentParser(
         prog="Convert Waymo",
         description="Convert the Waymo Open Dataset to remove all dependencies to Tensorflow",

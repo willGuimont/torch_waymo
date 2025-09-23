@@ -1,9 +1,10 @@
 """
 Based on https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/label.proto
 """
+
 from dataclasses import dataclass
 
-from .keypoint_proto import LaserKeypoints, CameraKeypoints
+from .keypoint_proto import CameraKeypoints, LaserKeypoints
 from .utils import ReversibleIntEnum
 
 
