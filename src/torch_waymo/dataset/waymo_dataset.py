@@ -35,7 +35,7 @@ class WaymoDataset(Dataset):
             )
 
     def __len__(self) -> int:
-        return self._seq_lens[-1]
+        return sum(self._seq_lens)
 
     def __getitem__(self, idx: int) -> Union[SimplifiedFrame, Frame]:
         path = self._split_path.joinpath(f"{idx}.pkl")
