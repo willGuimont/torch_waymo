@@ -11,6 +11,6 @@ class SimplifiedFrame:
     context: Context
     timestamp_micros: int
     pose: Transform
-    laser_labels: [Label]
-    no_label_zones: [Polygon2dProto]
-    points: np.ndarray
+    laser_labels: list[Label]
+    no_label_zones: list[Polygon2dProto]
+    points: list[np.ndarray]

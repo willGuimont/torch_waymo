@@ -1,2 +1,4 @@
-black[d]
-uv
+# Resolve development and conversion dependencies together so TensorFlow's
+# typing-extensions constraint is retained.
+--find-links https://storage.googleapis.com/jax-releases/jax_releases.html
+-e .[dev,waymo]

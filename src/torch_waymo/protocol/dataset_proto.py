@@ -26,7 +26,7 @@ def fullname(o):
     return module + "." + klass.__qualname__
 
 
-def from_data(cls: typing.Type[T], data) -> T:
+def from_data(cls: type[T], data) -> T:
     """
     Convert a protobuf message to a dataclass instance.
     Handles nested dataclasses and lists of dataclasses.
@@ -34,33 +34,25 @@ def from_data(cls: typing.Type[T], data) -> T:
     :param data: the protobuf message
     :return: the dataclass instance
     """
-    from google.protobuf.pyext._message import (
-        RepeatedCompositeContainer,
-        RepeatedScalarContainer,
-    )
     from waymo_open_dataset import dataset_pb2
 
     if isinstance(data, dataset_pb2.Transform):
         return np.array(data.transform).reshape((4, 4))
-    if (
-        isinstance(data, list)
-        or isinstance(data, RepeatedCompositeContainer)
-        or isinstance(data, RepeatedScalarContainer)
-    ):
-        return [from_data(cls[0], d) for d in data]
+    if isinstance(cls, list) or typing.get_origin(cls) is list:
+        if isinstance(cls, list):
+            element_type = cls[0]
+        else:
+            element_type = typing.get_args(cls)[0]
+        return [from_data(element_type, d) for d in data]
 
     if not is_dataclass(cls):
         return data
 
-    field_names = [f.name for f in fields(cls)]
-    field_types = {f.name: f.type for f in fields(cls)}
-
-    attributes = dict()
-    for name in dir(data):
-        if name in field_names:
-            field_type = field_types[name]
-            field_data = getattr(data, name)
-            attributes[name] = from_data(field_type, field_data)
+    attributes = {}
+    for field in fields(cls):
+        if hasattr(data, field.name):
+            field_data = getattr(data, field.name)
+            attributes[field.name] = from_data(field.type, field_data)
 
     return cls(**attributes)
 

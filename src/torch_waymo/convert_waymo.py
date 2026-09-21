@@ -2,9 +2,7 @@ import argparse
 import pathlib
 import pickle
 
-import tensorflow.compat.v1 as tf
-
-tf.enable_eager_execution()
+import tensorflow as tf
 import tqdm
 from waymo_open_dataset import dataset_pb2 as open_dataset
 from waymo_open_dataset.utils import frame_utils
@@ -30,7 +28,9 @@ def generate_cache(root_path: pathlib.Path, split: str, simplified: bool = False
     split_cache_path.mkdir(parents=True, exist_ok=True)
 
     # Cache sequence lengths
-    sequence_paths = sorted(list(split_path.iterdir()))
+    sequence_paths = sorted(path for path in split_path.iterdir() if path.is_file())
+    if not sequence_paths:
+        raise FileNotFoundError(f"No TFRecord files found in {split_path}")
     seq_lens = _cache_seq_lens(sequence_paths, split_cache_path)
 
     # Generate the new dataset
@@ -72,7 +72,7 @@ def _load_frame(data, simplified: bool):
     :return: Frame or SimplifiedFrame
     """
     frame = open_dataset.Frame()
-    frame.ParseFromString(bytearray(data.numpy()))
+    frame.ParseFromString(data.numpy())
     converted_frame = dataset_proto.from_data(Frame, frame)
 
     # Generate point cloud
@@ -88,7 +88,7 @@ def _load_frame(data, simplified: bool):
     converted_frame.points = points
 
     if not simplified:
-        # Return full frame (images, lasers, labels). Point cloud generation skipped for speed.
+        # Return the complete frame, including images, lasers, labels, and point clouds.
         return converted_frame
 
     # Simplified path: compute point cloud and build SimplifiedFrame (no images stored)
@@ -104,7 +104,7 @@ def _load_frame(data, simplified: bool):
 
 
 def main():
-    SPLITS = ["training", "validation", "testing"]
+    splits = ["training", "validation", "testing"]
 
     parser = argparse.ArgumentParser(
         prog="Convert Waymo",
@@ -121,9 +121,9 @@ def main():
         "-s",
         "--splits",
         type=str,
-        choices=SPLITS,
+        choices=splits,
         nargs="+",
-        default=SPLITS,
+        default=["training", "validation"],
         help="Specify the splits you want to process",
     )
     parser.add_argument(

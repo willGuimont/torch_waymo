@@ -1,6 +1,4 @@
-numpy
-protobuf==3.20.0
-tensorflow[and-cuda]
-torch<2
-tqdm
-waymo-open-dataset-tf-2-11-0
+# Conversion environment: Python 3.10, TensorFlow 2.13, Waymo SDK 1.6.7.
+# Waymo pins jaxlib 0.4.13, which moved from PyPI to Google's archive.
+--find-links https://storage.googleapis.com/jax-releases/jax_releases.html
+-e .[waymo]

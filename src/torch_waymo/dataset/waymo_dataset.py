@@ -1,6 +1,6 @@
 import pathlib
 import pickle
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 from torch.utils.data import Dataset
 
@@ -9,7 +9,7 @@ from .simplified_frame import SimplifiedFrame
 
 
 class WaymoDataset(Dataset):
-    def __init__(self, root_path: str, split: str, transform: Optional[Callable] = None):
+    def __init__(self, root_path: str, split: str, transform: Callable | None = None):
         self._root_path = pathlib.Path(root_path).expanduser()
         self._split = split
         self._split_path = self._root_path.joinpath(split)
@@ -37,7 +37,7 @@ class WaymoDataset(Dataset):
     def __len__(self) -> int:
         return sum(self._seq_lens)
 
-    def __getitem__(self, idx: int) -> Union[SimplifiedFrame, Frame]:
+    def __getitem__(self, idx: int) -> SimplifiedFrame | Frame:
         path = self._split_path.joinpath(f"{idx}.pkl")
         if path.exists():
             return self._get_frame(path)
