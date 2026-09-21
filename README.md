@@ -169,10 +169,10 @@ print(sum(points.shape[0] for points in frame.points))
 
 Use `~/Datasets/Waymo-v2/converted` instead when camera images and the complete frame are needed. Home-directory (`~`) paths are expanded automatically.
 
-For a guided example covering camera tensors, LiDAR tensors, range images, 2D and 3D annotations, segmentation, and simple visualization, open [`examples/waymo_torch_walkthrough.ipynb`](https://github.com/willGuimont/torch_waymo/blob/main/examples/waymo_torch_walkthrough.ipynb):
+For a reactive example covering camera tensors, LiDAR tensors, range images, 2D and 3D annotations, segmentation, and simple visualization, open [`examples/waymo_torch_walkthrough.py`](https://github.com/willGuimont/torch_waymo/blob/main/examples/waymo_torch_walkthrough.py) with [Marimo](https://marimo.io/):
 
 ```shell
+uv sync --extra examples
 TORCH_WAYMO_DATASET="${HOME}/Datasets/Waymo-v2-subset/converted" \
-  uv run --with jupyter --with "matplotlib>=3.9" --with "pillow>=11" \
-  jupyter lab examples/waymo_torch_walkthrough.ipynb
+  uv run marimo edit examples/waymo_torch_walkthrough.py
 ```
