@@ -2,6 +2,7 @@
 Based on https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto#L145
 """
 
+import types
 import typing
 from dataclasses import dataclass, fields, is_dataclass
 
@@ -36,9 +37,16 @@ def from_data(cls: type[T], data) -> T:
     """
     from waymo_open_dataset import dataset_pb2
 
+    origin = typing.get_origin(cls)
+    if origin in (typing.Union, types.UnionType):
+        concrete_types = [member for member in typing.get_args(cls) if member is not type(None)]
+        if not concrete_types:
+            return data
+        return from_data(concrete_types[0], data)
+
     if isinstance(data, dataset_pb2.Transform):
         return np.array(data.transform).reshape((4, 4))
-    if isinstance(cls, list) or typing.get_origin(cls) is list:
+    if isinstance(cls, list) or origin is list:
         if isinstance(cls, list):
             element_type = cls[0]
         else:
@@ -182,16 +190,26 @@ class Context:
 @dataclass
 class RangeImage:
     """
-    Range image and associated data.
+    Range image and associated data from either Waymo source format.
+
+    Waymo v2 Parquet conversion populates the decoded ``values``, projection,
+    pose, flow, and segmentation arrays. Legacy v1 TFRecord conversion retains
+    the original compressed payloads.
+
     *_compressed fields are compressed using Zlib, decompress using:
     val = ZlibDecompress(range_image_compressed)
     """
 
-    range_image_compressed: np.ndarray
-    camera_projection_compressed: np.ndarray
-    range_image_pose_compressed: np.ndarray
-    range_image_flow_compressed: np.ndarray
-    segmentation_label_compressed: np.ndarray
+    range_image_compressed: bytes | np.ndarray | None = None
+    camera_projection_compressed: bytes | np.ndarray | None = None
+    range_image_pose_compressed: bytes | np.ndarray | None = None
+    range_image_flow_compressed: bytes | np.ndarray | None = None
+    segmentation_label_compressed: bytes | np.ndarray | None = None
+    values: np.ndarray | None = None
+    camera_projection: np.ndarray | None = None
+    pose: np.ndarray | None = None
+    flow: np.ndarray | None = None
+    segmentation_label: np.ndarray | None = None
 
 
 @dataclass
@@ -212,9 +230,10 @@ class CameraSegmentationLabel:
     """
 
     panoptic_label_divisor: int
-    panoptic_label: np.ndarray
-    instance_id_to_global_id_mapping: [InstanceIDToGlobalIDMapping]
+    panoptic_label: bytes | np.ndarray
+    instance_id_to_global_id_mapping: list[InstanceIDToGlobalIDMapping]
     sequence_id: str
+    num_cameras_covered: bytes | np.ndarray = b""
 
 
 @dataclass
@@ -241,7 +260,7 @@ class CameraLabels:
     """
 
     name: CameraName
-    labels: [Label]
+    labels: list[Label]
 
 
 @dataclass
@@ -264,11 +283,11 @@ class Frame:
     context: Context
     timestamp_micros: int
     pose: Transform
-    images: [CameraImage]
-    lasers: [Laser]
-    laser_labels: [Label]
-    projected_lidar_labels: [CameraLabels]
-    camera_labels: [CameraLabels]
-    no_label_zones: [Polygon2dProto]
+    images: list[CameraImage]
+    lasers: list[Laser]
+    laser_labels: list[Label]
+    projected_lidar_labels: list[CameraLabels]
+    camera_labels: list[CameraLabels]
+    no_label_zones: list[Polygon2dProto]
     # Empty if not computed
-    points: np.ndarray = None
+    points: list[np.ndarray] | None = None
