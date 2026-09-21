@@ -392,6 +392,7 @@ def test_converts_full_parquet_frame(tmp_path):
 
     dataset = WaymoDataset(tmp_path / "converted", "training")
     frame = dataset[0]
+    assert (tmp_path / "converted" / "training" / "0.pkl.gz").is_file()
     assert frame.context.name == SEGMENT
     assert frame.context.stats.location == "SF"
     assert frame.timestamp_micros == TIMESTAMP

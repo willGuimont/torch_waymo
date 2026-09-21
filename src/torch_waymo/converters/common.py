@@ -1,3 +1,4 @@
+import gzip
 import pathlib
 import pickle
 from collections.abc import Sequence
@@ -15,8 +16,17 @@ def write_sequence_lengths(path: pathlib.Path, lengths: Sequence[int]) -> None:
         pickle.dump(list(lengths), file)
 
 
-def write_frame(path: pathlib.Path, index: int, frame) -> None:
-    frame_path = path / f"{index}.pkl"
-    if not frame_path.exists():
-        with frame_path.open("wb") as file:
-            pickle.dump(frame, file)
+def write_frame(path: pathlib.Path, index: int, frame, *, compress: bool = False) -> None:
+    plain_path = path / f"{index}.pkl"
+    compressed_path = path / f"{index}.pkl.gz"
+    if plain_path.exists() or compressed_path.exists():
+        return
+    frame_path = compressed_path if compress else plain_path
+    temporary_path = frame_path.with_name(f".{frame_path.name}.tmp")
+    if compress:
+        file = gzip.open(temporary_path, "wb", compresslevel=1)
+    else:
+        file = temporary_path.open("wb")
+    with file:
+        pickle.dump(frame, file, protocol=pickle.HIGHEST_PROTOCOL)
+    temporary_path.replace(frame_path)

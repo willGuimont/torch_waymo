@@ -1,3 +1,4 @@
+import gzip
 import pathlib
 import pickle
 from collections.abc import Callable
@@ -39,13 +40,15 @@ class WaymoDataset(Dataset):
 
     def __getitem__(self, idx: int) -> SimplifiedFrame | Frame:
         path = self._split_path.joinpath(f"{idx}.pkl")
-        if path.exists():
-            return self._get_frame(path)
-        else:
-            raise IndexError(f"Could not load frame at index {idx} (missing file {path}).")
+        if not path.exists():
+            path = self._split_path.joinpath(f"{idx}.pkl.gz")
+        if not path.exists():
+            raise IndexError(f"Could not load frame at index {idx} (missing file: expected .pkl or .pkl.gz).")
+        return self._get_frame(path)
 
     def _get_frame(self, path):
-        with open(path, "rb") as f:
+        opener = gzip.open if path.suffix == ".gz" else open
+        with opener(path, "rb") as f:
             x = pickle.load(f)
         if self._transform is not None:
             x = self._transform(x)

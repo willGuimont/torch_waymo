@@ -75,7 +75,82 @@ def _read_rows(split_path: pathlib.Path, component: str, filename: str, *, requi
         import pyarrow.parquet as pq
     except ImportError as error:
         raise ImportError("Parquet conversion requires the 'waymo' extra: uv sync --extra waymo") from error
-    return pq.read_table(path, memory_map=True).to_pylist()
+    return [row for batch in pq.ParquetFile(path, memory_map=True).iter_batches() for row in _batch_rows(batch)]
+
+
+def _batch_rows(batch) -> Iterator[dict]:
+    """Yield Arrow rows while keeping list columns as efficient NumPy arrays."""
+    import pyarrow as pa
+
+    columns = zip(batch.schema.names, batch.columns)
+    columns = list(columns)
+    for row_index in range(batch.num_rows):
+        row = {}
+        for name, column in columns:
+            scalar = column[row_index]
+            if not scalar.is_valid:
+                row[name] = None
+            elif (
+                pa.types.is_list(scalar.type)
+                or pa.types.is_large_list(scalar.type)
+                or pa.types.is_fixed_size_list(scalar.type)
+            ):
+                row[name] = scalar.values.to_numpy(zero_copy_only=False)
+            else:
+                row[name] = scalar.as_py()
+        yield row
+
+
+class _TimestampReader:
+    """Read one timestamp group at a time from a sorted component shard."""
+
+    def __init__(
+        self,
+        split_path: pathlib.Path,
+        component: str,
+        filename: str,
+        *,
+        required: bool = False,
+        batch_size: int = 1024,
+    ):
+        path = split_path / component / filename
+        if not path.exists():
+            if required:
+                raise FileNotFoundError(f"Missing required Waymo v2 component: {path}")
+            self._groups = iter(())
+        else:
+            try:
+                import pyarrow.parquet as pq
+            except ImportError as error:
+                raise ImportError("Parquet conversion requires the 'waymo' extra: uv sync --extra waymo") from error
+            batches = pq.ParquetFile(path, memory_map=True).iter_batches(batch_size=batch_size)
+            self._groups = self._group_rows(row for batch in batches for row in _batch_rows(batch))
+        self._current = next(self._groups, None)
+
+    @staticmethod
+    def _group_rows(rows: Iterator[dict]) -> Iterator[tuple[int, list[dict]]]:
+        current_timestamp = None
+        current_rows = []
+        for row in rows:
+            timestamp = int(row[_TIMESTAMP])
+            if current_timestamp is not None and timestamp != current_timestamp:
+                if timestamp < current_timestamp:
+                    raise ValueError("Waymo component rows are not sorted by frame timestamp")
+                yield current_timestamp, current_rows
+                current_rows = []
+            current_timestamp = timestamp
+            current_rows.append(row)
+        if current_timestamp is not None:
+            yield current_timestamp, current_rows
+
+    def read(self, timestamp: int) -> list[dict]:
+        while self._current is not None and self._current[0] < timestamp:
+            self._current = next(self._groups, None)
+        if self._current is None or self._current[0] != timestamp:
+            return []
+        rows = self._current[1]
+        self._current = next(self._groups, None)
+        return rows
 
 
 def _group_timestamp(rows: list[dict]) -> dict[int, list[dict]]:
@@ -476,25 +551,31 @@ def _convert_sequence(
     required_components = {"lidar"}
     if not simplified:
         required_components.add("camera_image")
-    per_timestamp = {
-        component: _group_timestamp(
-            _read_rows(split_path, component, filename, required=component in required_components)
+    components = (
+        "camera_image",
+        "camera_segmentation",
+        "camera_box",
+        "camera_to_lidar_box_association",
+        "camera_hkp",
+        "lidar",
+        "lidar_camera_projection",
+        "lidar_pose",
+        "lidar_segmentation",
+        "lidar_box",
+        "lidar_camera_synced_box",
+        "lidar_hkp",
+        "projected_lidar_box",
+    )
+    large_components = {"camera_image", "lidar", "lidar_camera_projection", "lidar_pose", "lidar_segmentation"}
+    readers = {
+        component: _TimestampReader(
+            split_path,
+            component,
+            filename,
+            required=component in required_components,
+            batch_size=5 if component in large_components else 1024,
         )
-        for component in (
-            "camera_image",
-            "camera_segmentation",
-            "camera_box",
-            "camera_to_lidar_box_association",
-            "camera_hkp",
-            "lidar",
-            "lidar_camera_projection",
-            "lidar_pose",
-            "lidar_segmentation",
-            "lidar_box",
-            "lidar_camera_synced_box",
-            "lidar_hkp",
-            "projected_lidar_box",
-        )
+        for component in components
     }
 
     for pose_row in sorted(vehicle_pose_rows, key=lambda row: row[_TIMESTAMP]):
@@ -504,8 +585,10 @@ def _convert_sequence(
             raise ValueError(f"Missing stats for frame {timestamp} in {filename}")
         frame_pose = _transform(pose_row, "VehiclePoseComponent", "world_from_vehicle")
 
+        frame_rows = {component: reader.read(timestamp) for component, reader in readers.items()}
+
         def rows(component: str) -> list[dict]:
-            return per_timestamp[component].get(timestamp, [])
+            return frame_rows[component]
 
         segment_name = str(pose_row["key.segment_context_name"])
         context = _context(segment_name, stats_for_frame[0], camera_calibrations, lidar_calibrations)
@@ -560,7 +643,7 @@ def generate_parquet_cache(root_path: pathlib.Path, split: str, simplified: bool
     for sequence_path in tqdm.tqdm(sequence_paths, desc=f"Converting {split}"):
         sequence_length = 0
         for frame in _convert_sequence(split_path, sequence_path, simplified):
-            write_frame(output_path, frame_index, frame)
+            write_frame(output_path, frame_index, frame, compress=True)
             frame_index += 1
             sequence_length += 1
         sequence_lengths.append(sequence_length)

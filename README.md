@@ -43,7 +43,7 @@ uv run torch-waymo-convert --dataset ~/Datasets/Waymo-v2 --simplified
 uv run torch-waymo-convert --dataset ~/Datasets/Waymo-v2 --splits training
 ```
 
-Conversion is resumable: existing frame pickle files are skipped. Each converted split contains a `len.pkl` index.
+Conversion is resumable: existing frame files are skipped. Parquet frames are stored as compressed `.pkl.gz` files, and each converted split contains a `len.pkl` index. `WaymoDataset` also continues to read uncompressed `.pkl` caches produced by the legacy converter.
 
 Full conversion preserves v2 camera images, both LiDAR range-image returns, camera projections, per-pixel poses, camera and LiDAR segmentation, calibrations, 2D/3D boxes, synchronized boxes, associations, keypoints, statistics, and generated first-return point clouds. Waymo v2 does not include the v1 polygonal `no_label_zones`, so `Frame.no_label_zones` is empty; the equivalent per-pixel no-label-zone flag remains in channel 3 of each `RangeImage.values` array. Maps are also only available in the v1 dataset.
 
