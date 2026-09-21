@@ -1,6 +1,0 @@
-numpy
-protobuf==3.20.0
-tensorflow[and-cuda]
-torch<2
-tqdm
-waymo-open-dataset-tf-2-11-0

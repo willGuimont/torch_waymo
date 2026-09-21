@@ -2,7 +2,7 @@
 Based on https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/label.proto
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .keypoint_proto import CameraKeypoints, LaserKeypoints
 from .utils import ReversibleIntEnum
@@ -72,11 +72,11 @@ class Label:
     tracking_difficulty_level: DifficultyLevel
     num_lidar_points_in_box: int
     num_top_lidar_points_in_box: int
-    laser_keypoints: LaserKeypoints
-    camera_keypoints: CameraKeypoints
-    association: Association
-    most_visible_camera_name: str
-    camera_synced_box: Box
+    laser_keypoints: LaserKeypoints = field(default_factory=LaserKeypoints)
+    camera_keypoints: CameraKeypoints = field(default_factory=CameraKeypoints)
+    association: Association | None = None
+    most_visible_camera_name: str = ""
+    camera_synced_box: Box | None = None
 
 
 @dataclass

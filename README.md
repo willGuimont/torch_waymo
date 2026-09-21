@@ -1,9 +1,14 @@
 # torch_waymo
 
-Load Waymo Open Dataset in PyTorch
+Load converted [Waymo Open Dataset](https://waymo.com/open/) Perception frames with a PyTorch `Dataset`.
 
-Cite this repository:
-```
+The recommended Waymo v2 Parquet converter supports Python 3.10 or newer and does not require TensorFlow. The legacy v1 TFRecord converter remains available on Python 3.10.
+
+## Citation
+
+If this package is useful in your work, please cite it:
+
+```bibtex
 @software{Guimont-Martin_A_PyTorch_dataloader_2023,
     author = {Guimont-Martin, William},
     month = {1},
@@ -13,85 +18,161 @@ Cite this repository:
 }
 ```
 
-## Usage
+Remember to also follow the [Waymo Open Dataset citation requirements](https://waymo.com/open/terms/) for the dataset release you use.
 
-Requires:
-- Python < 3.10
+## Download the dataset
 
-### Download the dataset
+Accept the Waymo dataset terms and authenticate the Google Cloud CLI first:
 
 ```shell
-# Login to gcloud
 gcloud auth login
-
-# Download the full dataset
-cd <path/to/waymo>
-gsutil -m cp -r \
-  "gs://waymo_open_dataset_v_1_4_1/individual_files/training" \
-  "gs://waymo_open_dataset_v_1_4_1/individual_files/validation" \
-  .
 ```
 
-### Convert it
+### One-segment v2 subset
+
+The segment below contains 199 frames and all supported component types. It is the quickest way to try the full conversion without downloading an entire split (approximately 589 MB raw and 1.3 GB converted):
 
 ```shell
-# Make a tf venv with Python < 3.10
-python3.9 -m venv venv_tf
-source venv_tf/bin/activate
+SEGMENT=10023947602400723454_1120_000_1140_000
+WAYMO_V2_ROOT="${HOME}/Datasets/Waymo-v2-subset"
 
-# We recommend using uv for faster installs
-pip install uv
-uv pip install "torch_waymo[waymo]"
-
-# Convert all splits (FULL frames with images & lasers) -> writes to <path>/converted
-torch-waymo-convert --dataset <path/to/waymo>
-
-# Convert only training split (FULL frames)
-torch-waymo-convert --dataset <path/to/waymo> --splits training
-
-# Convert multiple splits (FULL frames)
-torch-waymo-convert --dataset <path/to/waymo> --splits training validation
-
-# (NEW) Convert to SIMPLIFIED frames (no camera images stored, point cloud + labels only)
-# Writes to <path>/converted_simplified
-torch-waymo-convert --dataset <path/to/waymo> --simplified
-
-# Simplified + specific splits
-torch-waymo-convert --dataset <path/to/waymo> --simplified --splits training validation
+for component in \
+  camera_box camera_calibration camera_hkp camera_image camera_segmentation \
+  camera_to_lidar_box_association lidar lidar_box lidar_calibration \
+  lidar_camera_projection lidar_camera_synced_box lidar_hkp lidar_pose \
+  lidar_segmentation projected_lidar_box stats vehicle_pose
+do
+  mkdir -p "${WAYMO_V2_ROOT}/training/${component}"
+  gcloud storage cp \
+    "gs://waymo_open_dataset_v_2_0_1/training/${component}/${SEGMENT}.parquet" \
+    "${WAYMO_V2_ROOT}/training/${component}/"
+done
 ```
 
-### Load it in your project
-
-Now that the dataset is converted, you don't have to depend on `waymo-open-dataset-tf-2-11-0` in your downstream project.
-You can simply install `torch_waymo` in your *runtime* environment.
+Convert and smoke-test the subset:
 
 ```shell
-pip install torch_waymo
+uv sync --extra waymo
+uv run torch-waymo-convert \
+  --dataset "${HOME}/Datasets/Waymo-v2-subset" \
+  --splits training
+
+uv run python -c "from torch_waymo import WaymoDataset; d = WaymoDataset('${HOME}/Datasets/Waymo-v2-subset/converted', 'training'); f = d[0]; assert len(d) == 199 and len(f.images) == len(f.lasers) == len(f.points) == 5; print(len(d), sum(map(len, f.points)))"
 ```
-Example usage:
-train_dataset = WaymoDataset('~/Datasets/Waymo/converted_simplified', 'training')
-Example usage (Full conversion):
+
+### Complete v2 split
+
+Use recursive synchronization when you need every segment. The modular format lets you omit components that your application does not use.
+
+```shell
+WAYMO_V2_ROOT="${HOME}/Datasets/Waymo-v2"
+
+for component in \
+  camera_box camera_calibration camera_hkp camera_image camera_segmentation \
+  camera_to_lidar_box_association lidar lidar_box lidar_calibration \
+  lidar_camera_projection lidar_camera_synced_box lidar_hkp lidar_pose \
+  lidar_segmentation projected_lidar_box stats vehicle_pose
+do
+  gcloud storage rsync --recursive \
+    "gs://waymo_open_dataset_v_2_0_1/training/${component}" \
+    "${WAYMO_V2_ROOT}/training/${component}"
+done
+```
+
+Repeat with `validation` or `testing` as needed. Camera/LiDAR segmentation and human-keypoint components are sparse; absent rows are handled normally.
+
+### One-segment legacy v1 subset
+
+The matching v1 TFRecord is useful for checking legacy compatibility:
+
+```shell
+WAYMO_V1_ROOT="${HOME}/Datasets/Waymo-v1-subset"
+mkdir -p "${WAYMO_V1_ROOT}/training"
+gcloud storage cp \
+  gs://waymo_open_dataset_v_1_4_3/individual_files/training/segment-10023947602400723454_1120_000_1140_000_with_camera_labels.tfrecord \
+  "${WAYMO_V1_ROOT}/training/"
+```
+
+## Convert raw frames
+
+Create the v2 conversion environment with [uv](https://docs.astral.sh/uv/):
+
+```shell
+uv sync --extra waymo
+
+# Auto-detects v2 Parquet and converts training and validation.
+uv run torch-waymo-convert --dataset ~/Datasets/Waymo-v2
+
+# Point clouds and labels only; writes <dataset>/converted_simplified.
+uv run torch-waymo-convert --dataset ~/Datasets/Waymo-v2 --simplified
+
+# Select one or more splits explicitly.
+uv run torch-waymo-convert --dataset ~/Datasets/Waymo-v2 --splits training
+```
+
+Conversion is resumable: existing frame files are skipped. Parquet frames are stored as compressed `.pkl.gz` files, and each converted split contains a `len.pkl` index. `WaymoDataset` also continues to read uncompressed `.pkl` caches produced by the legacy converter.
+
+Full conversion preserves v2 camera images, both LiDAR returns, camera projections, per-pixel poses, camera and LiDAR segmentation, calibrations, 2D/3D boxes, synchronized boxes, associations, keypoints, statistics, and generated first-return point clouds. Waymo v2 does not include the v1 polygonal `no_label_zones`, so `Frame.no_label_zones` is empty; the equivalent per-pixel no-label-zone flag remains in channel 3 of each `RangeImage.values` array. Maps are also only available in the v1 dataset.
+
+To convert legacy v1.4.x TFRecords, use a separate Python 3.10 environment so the TensorFlow dependency stack does not replace your main environment:
+
+```shell
+UV_PROJECT_ENVIRONMENT=.venv-waymo-v1 uv sync --python 3.10 --extra waymo-v1
+UV_PROJECT_ENVIRONMENT=.venv-waymo-v1 uv run torch-waymo-convert \
+  --format tfrecord \
+  --dataset ~/Datasets/Waymo-v1 \
+  --splits training
+```
+
+## Run the tests
+
+The regular test suite uses generated fixtures, so it does not require downloading Waymo data:
+
+```shell
+uv sync --extra waymo
+uv run pytest -q
+uv run ruff check src tests
+uv run ruff format --check src tests
+```
+
+To test the real v1 subset after downloading it above:
+
+```shell
+UV_PROJECT_ENVIRONMENT=.venv-waymo-v1 uv run torch-waymo-convert \
+  --format tfrecord \
+  --dataset ~/Datasets/Waymo-v1-subset \
+  --splits training
+
+UV_PROJECT_ENVIRONMENT=.venv-waymo-v1 uv run python -c "from torch_waymo import WaymoDataset; d = WaymoDataset('~/Datasets/Waymo-v1-subset/converted', 'training'); f = d[0]; assert len(d) == 199 and len(f.images) == len(f.lasers) == len(f.points) == 5; print(len(d), sum(map(len, f.points)))"
+```
+
+## Load converted frames
+
+Add only the runtime package to a downstream uv project:
+
+```shell
+uv add torch_waymo
+```
+
 ```python
 from torch_waymo import WaymoDataset
 
-# Simplified frames (no images, only point clouds + labels)
-train_dataset = WaymoDataset('~/Datasets/Waymo/converted_simplified', 'training')
-for i in range(10):
-    # frame is of type SimplifiedFrame
-    frame = train_dataset[i]
-    print(frame.timestamp_micros)
-    print(frame.timestamp_micros, len(frame.lasers))
+train_dataset = WaymoDataset(
+    "~/Datasets/Waymo-v2/converted_simplified",
+    "training",
+)
 
-# Full frames (with images)
-train_dataset = WaymoDataset('~/Datasets/Waymo/converted', 'training')
-for i in range(10):
-    # frame is of type Frame
-    frame = train_dataset[i]
-    print(frame.timestamp_micros)
-    print(frame.timestamp_micros, len(frame.images))
+frame = train_dataset[0]
+print(frame.timestamp_micros)
+print(sum(points.shape[0] for points in frame.points))
 ```
 
-Notes:
-- Paths with `~` are supported; they will expand to your home directory.
-- `len.pkl` inside each split directory stores cumulative frame counts for indexing.
-- If you re-run conversion, existing frames are skipped (idempotent per frame file).
+Use `~/Datasets/Waymo-v2/converted` instead when camera images and the complete frame are needed. Home-directory (`~`) paths are expanded automatically.
+
+For a reactive example covering camera tensors, LiDAR tensors, range images, 2D and 3D annotations, segmentation, and simple visualization, open [`examples/waymo_torch_walkthrough.py`](https://github.com/willGuimont/torch_waymo/blob/main/examples/waymo_torch_walkthrough.py) with [Marimo](https://marimo.io/):
+
+```shell
+uv sync --extra examples
+TORCH_WAYMO_DATASET="${HOME}/Datasets/Waymo-v2-subset/converted" \
+  uv run marimo edit examples/waymo_torch_walkthrough.py
+```

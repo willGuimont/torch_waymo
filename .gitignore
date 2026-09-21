@@ -1,7 +1,38 @@
-/.idea/
-/venv/
-/venv_tf/
-*.egg-info
+# Byte-compiled / optimized files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Marimo notebook caches
+__marimo__/
+.marimo/
+
+# Virtual environments
+.venv/
+.venv*/
+venv/
+venv_tf/
+
+# Packaging & Build outputs
 /build/
 /dist/
-__pycache__/
+*.egg-info/
+
+# Test & Linter caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDE & OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Local datasets & converted outputs
+/waymo
+converted/
+converted_simplified/

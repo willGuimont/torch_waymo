@@ -7,7 +7,7 @@ from torch_waymo import WaymoDataset
 try:
     from PIL import Image
 except ImportError as e:
-    raise ImportError("Pillow is required for this demo. Install with `pip install pillow`.") from e
+    raise ImportError("Pillow is required for this demo. Install with `uv add pillow`.") from e
 
 import matplotlib.pyplot as plt
 import numpy as np

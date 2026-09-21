@@ -2,7 +2,7 @@
 Based on https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/protos/keypoint.proto
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .utils import ReversibleIntEnum
 
@@ -34,7 +34,12 @@ class Keypoint2d:
 @dataclass
 class Keypoint3d:
     visibility: KeypointVisibility
-    location_px: Vec3d = None
+    location_m: Vec3d | None = None
+
+    @property
+    def location_px(self) -> Vec3d | None:
+        """Deprecated alias retained for objects written by torch_waymo 0.1."""
+        return self.__dict__.get("location_m", self.__dict__.get("location_px"))
 
 
 class KeypointType(ReversibleIntEnum):
@@ -70,7 +75,7 @@ class CameraKeypoint:
 
 @dataclass
 class CameraKeypoints:
-    keypoint: [CameraKeypoint]
+    keypoint: list[CameraKeypoint] = field(default_factory=list)
 
 
 @dataclass
@@ -81,4 +86,4 @@ class LaserKeypoint:
 
 @dataclass
 class LaserKeypoints:
-    keypoint: [LaserKeypoint]
+    keypoint: list[LaserKeypoint] = field(default_factory=list)
