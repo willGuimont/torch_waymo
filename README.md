@@ -23,31 +23,30 @@ This checkout expects the optional local symlink `waymo -> ~/Datasets/Waymo`. It
 
 ## Convert raw frames
 
-Create a Python 3.10 environment for the Waymo SDK:
+Create the locked Python 3.10 conversion environment with
+[uv](https://docs.astral.sh/uv/):
 
 ```shell
-uv venv --python 3.10 .venv
-source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync --python 3.10 --extra waymo
 
 # Converts training and validation to ./waymo/converted.
-torch-waymo-convert --dataset ./waymo
+uv run torch-waymo-convert --dataset ./waymo
 
 # Point clouds and labels only; writes ./waymo/converted_simplified.
-torch-waymo-convert --dataset ./waymo --simplified
+uv run torch-waymo-convert --dataset ./waymo --simplified
 
 # Select one or more splits explicitly.
-torch-waymo-convert --dataset ./waymo --splits training
+uv run torch-waymo-convert --dataset ./waymo --splits training
 ```
 
 Conversion is resumable: existing frame pickle files are skipped. Each converted split contains a `len.pkl` index.
 
 ## Load converted frames
 
-Install only the runtime dependencies in downstream projects:
+Add only the runtime package to a downstream uv project:
 
 ```shell
-pip install torch_waymo
+uv add torch_waymo
 ```
 
 ```python

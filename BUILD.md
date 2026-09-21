@@ -3,11 +3,11 @@
 Build and validate the distributions locally:
 
 ```shell
-uv venv --python 3.13 .venv
-source .venv/bin/activate
-uv pip install ".[dev]"
-python -m build
-python -m twine check dist/*
+uv sync --python 3.13
+uv run pytest
+uv run ruff check .
+uv build
+uv run twine check dist/*
 ```
 
 Publishing is automated by `.github/workflows/publish.yml`. Create a GitHub release after updating the version in `pyproject.toml`; the workflow builds the release artifacts and publishes them to PyPI with Trusted Publishing.

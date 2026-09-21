@@ -1,4 +1,0 @@
-# Conversion environment: Python 3.10, TensorFlow 2.13, Waymo SDK 1.6.7.
-# Waymo pins jaxlib 0.4.13, which moved from PyPI to Google's archive.
---find-links https://storage.googleapis.com/jax-releases/jax_releases.html
--e .[waymo]
