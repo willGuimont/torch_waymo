@@ -4,6 +4,8 @@ Load converted [Waymo Open Dataset](https://waymo.com/open/) Perception frames w
 
 The recommended Waymo v2 Parquet converter supports Python 3.10 or newer and does not require TensorFlow. The legacy v1 TFRecord converter remains available on Python 3.10.
 
+More info on the [Project page](https://willguimont.com/projects/torch-waymo/).
+
 ## Citation
 
 If this package is useful in your work, please cite it:
